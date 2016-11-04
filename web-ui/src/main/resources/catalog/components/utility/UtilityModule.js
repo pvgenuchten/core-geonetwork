@@ -83,6 +83,20 @@
         };
       })
 
+      /* filter to check if a value is an array, and if so,
+         return param or empty string quite some of the gn json returns
+         empty array if undefined or empty string was intended */
+      .filter('asArray', function() {
+        return function(input) {
+          if (!input) return [];
+          if (angular.isArray(input)) {
+            return input;
+          } else {
+            return [input];
+          }
+        };
+      })
+
       /* filter to strip html tags, for strings
       that come in via userinput to prevent xss */
       .filter('htmlToPlaintext', function() {
