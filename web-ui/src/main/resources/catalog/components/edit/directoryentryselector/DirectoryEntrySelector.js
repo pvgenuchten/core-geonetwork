@@ -32,7 +32,7 @@
 
   var module = angular.module('gn_directory_entry_selector',
       ['gn_metadata_manager_service', 'gn_schema_manager_service',
-        'gn_editor_xml_service']);
+        'gn_editor_xml_service', 'pascalprecht.translate']);
 
   /**
    *
@@ -43,12 +43,12 @@
         'gnEditor', 'gnSchemaManagerService',
         'gnEditorXMLService', 'gnHttp', 'gnConfig',
         'gnCurrentEdit', 'gnConfigService', 'gnPopup',
-        'gnGlobalSettings',
+        'gnGlobalSettings', 'gnUrlUtils',
         function($rootScope, $timeout, $q, $http, $translate,
                  gnEditor, gnSchemaManagerService,
                  gnEditorXMLService, gnHttp, gnConfig,
                  gnCurrentEdit, gnConfigService, gnPopup,
-                 gnGlobalSettings) {
+       gnGlobalSettings, gnUrlUtils) {
 
           return {
             restrict: 'A',
@@ -77,7 +77,11 @@
               // If not using the directive in an editor context, set
               // the schema id to properly retrieve the codelists.
               schema: '@',
-              selectEntryCb: '='
+              selectEntryCb: '=',
+              // Can restrict how to insert the entry (xlink, text ..)
+              // insertModes: '@'
+              // If true, will only show entries with a valid status of 1
+              showValidOnly: '@'
             },
             templateUrl: '../../catalog/components/edit/' +
                 'directoryentryselector/partials/' +
@@ -96,7 +100,8 @@
                       _root: 'gmd:CI_ResponsibleParty',
                       sortBy: 'title',
                       sortOrder: 'reverse',
-                      resultType: 'subtemplates'
+                      resultType: 'subtemplates',
+                      _valid: scope.$eval(scope.showValidOnly) ? 1 : undefined
                     }
                   };
 
@@ -104,16 +109,26 @@
                  gnGlobalSettings.modelOptions);
                 },
                 post: function postLink(scope, iElement, iAttrs) {
+
+
+                  var insertModes = iAttrs.insertModes;
+                  if (insertModes) {
+                    insertModes = insertModes.split(',');
+                  }
+
+                  scope.insertAsXlink = !insertModes ||
+                 insertModes.indexOf('xlink') >= 0;
+                  scope.insertAsText = !insertModes ||
+                 insertModes.indexOf('text') >= 0;
+
                   // Separator between each contact XML
                   // snippet
                   var separator = '&&&';
 
-                  // Define type of XLinks: local:// or http:// based on
-                  // catalog configuration.
-                  var url =
-                 (gnConfig[gnConfig.key.isXLinkLocal] === true ?
-                      'local://' : gnConfigService.getServiceURL()) +
-                 'api/registries/entries/';
+                  // Only local mode (faster)
+                  var url = 'local://' + gnGlobalSettings.nodeId +
+                 '/api/registries/entries/';
+
                   scope.gnConfig = gnConfig;
                   // If true, display button to add the element
                   // without using the subtemplate selector.
@@ -149,7 +164,16 @@
                         scope.elementRef, scope.elementName,
                         scope.domId, 'before').then(function() {
                       if (scope.templateAddAction) {
-                        gnEditor.save(gnCurrentEdit.id, true);
+                        gnEditor.save(gnCurrentEdit.id, true).then(function() {
+                          // success. Nothing to do.
+                        }, function(rejectedValue) {
+                          $rootScope.$broadcast('StatusUpdated', {
+                            title: $translate.instant('saveMetadataError'),
+                            error: rejectedValue,
+                            timeout: 0,
+                            type: 'danger'
+                          });
+                        });
                       }
                     });
                   };
@@ -180,7 +204,14 @@
                             // Save the metadata and refresh the form
                             gnEditor.save(gnCurrentEdit.id, true).then(
                            function(r) {
-                             defer.resolve();
+                             defer.resolve(r);
+                           }, function(rejectedValue) {
+                             $rootScope.$broadcast('StatusUpdated', {
+                               title: $translate.instant('runServiceError'),
+                               error: rejectedValue,
+                               timeout: 0,
+                               type: 'danger'
+                             });
                            });
                           });
                         }
@@ -193,7 +224,7 @@
                     angular.forEach(entry, function(c) {
                       var id = c['geonet:info'].id,
                           uuid = c['geonet:info'].uuid;
-                      var params = [];
+                      var params = {};
 
                       // For the time being only contact role
                       // could be substitute in directory entry
@@ -202,39 +233,59 @@
                       // eg. data-variables="gmd:role/gmd:CI_RoleCode
                       //   /@codeListValue~{role}"
                       // will set the role of the contact.
-                      // TODO: this could be applicable not only to contact role
+                      // TODO: this could be applicable
+                      // not only to contact role
                       // No use case identified for now.
                       if (scope.hasDynamicVariable && role) {
-                        params.push('process=' +
-                            scope.variables.replace('{role}', role));
+                        params.process =
+                       scope.variables.replace('{role}', role);
                       } else if (scope.variables) {
-                        params.push('process=' + scope.variables);
+                        params.process = scope.variables;
                       }
 
                       if (angular.isString(scope.transformation) &&
                           scope.transformation !== '') {
-                        params.push('transformation=' + scope.transformation);
+                        params.transformation = scope.transformation;
                       }
 
-                      var urlParams = params.join('&');
+                      var langsParam = [];
+                      for (var p in
+                     JSON.parse(gnCurrentEdit.mdOtherLanguages)) {
+                        langsParam.push(p);
+                      }
+                      if (langsParam.length > 1) {
+                        params.lang = langsParam;
+                      }
+                      else {
+                        params.lang = gnCurrentEdit.mdLanguage;
+                      }
+                      params.schema = gnCurrentEdit.schema;
+
+                      if (!params.lang) {
+                        console.warn('No lang has been set for the xlink');
+                      }
+                      var urlParams =
+                     decodeURIComponent(gnUrlUtils.toKeyValue(params));
+
                       $http.get(
-                          '../api/registries/entries/' + uuid + '?' + urlParams)
-                        .success(function(xml) {
+                     '../api/registries/entries/' + uuid, {
+                       params: params
+                     })
+                     .success(function(xml) {
                        if (usingXlink) {
                          snippets.push(gnEditorXMLService.
-                                  buildXMLForXlink(scope.schema,
-                         scope.elementName,
-                                      url + uuid +
-                                      '?' + urlParams));
+                         buildXMLForXlink(scope.schema,
+                              scope.elementName,
+                              url + uuid +
+                              '?' + urlParams));
                        } else {
                          snippets.push(gnEditorXMLService.
-                                  buildXML(scope.schema,
-                         scope.elementName, xml));
+                         buildXML(scope.schema,
+                              scope.elementName, xml));
                        }
                        checkState(c);
                      });
                     });
-
                     return defer.promise;
                   };
 
@@ -249,7 +300,10 @@
                     openModal({
                       title: $translate.instant('chooseEntry'),
                       content:
-                     '<div gn-directory-entry-list-selector=""></div>',
+                     '<div gn-directory-entry-list-selector="" ' +
+                     (scope.$eval(scope.showValidOnly) ?
+                          ' show-valid-only="true"' : '') +
+                     '></div>',
                       class: 'gn-modal-lg'
                     }, scope, 'EntrySelected');
                   };
@@ -287,10 +341,13 @@
                      _root: 'gmd:CI_ResponsibleParty',
                      sortBy: 'title',
                      sortOrder: 'reverse',
-                     resultType: 'contact'
+                     resultType: 'contact',
+                     _valid:
+                     scope.$eval(tAttrs['showValidOnly']) ? 1 : undefined
                    }
                  };
                  scope.searchObj.params = angular.extend({},
+                 scope.searchObj.params,
                  scope.searchObj.defaultParams);
                  scope.stateObj = {
                    selectRecords: []
@@ -304,6 +361,8 @@
                  gnGlobalSettings.modelOptions);
                },
                post: function postLink(scope, iElement, iAttrs) {
+                 scope.ctrl = {};
+
                  scope.defaultRoleCode = iAttrs['defaultRole'] || null;
                  scope.defaultRole = null;
                  angular.forEach(scope.roles, function(r) {

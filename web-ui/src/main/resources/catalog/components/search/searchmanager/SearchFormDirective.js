@@ -62,10 +62,13 @@
     /** State of the facets of the current search */
     $scope.currentFacets = [];
 
-    /** Object were are stored result search information */
+    /** Object where are stored result search information */
     $scope.searchResults = {
       records: [],
-      count: -1
+      count: -1,
+      selectionBucket:
+          $scope.searchObj.selectionBucket ||
+          (Math.random() + '').replace('.', '')
     };
 
     $scope.searching = 0;
@@ -124,6 +127,25 @@
           $scope.searchObj.params,
           defaultParams);
 
+      // Add hidden filters which may
+      // restrict search (do not add an existing filter)
+      if ($scope.searchObj.filters) {
+        angular.forEach($scope.searchObj.filters,
+            function(value, key) {
+              var p = $scope.searchObj.params[key];
+              if (p) {
+                if (p !== value && (!p.indexOf || p.indexOf(value) === -1)) {
+                  if (!angular.isArray(p)) {
+                    $scope.searchObj.params[key] = [p];
+                  }
+                  $scope.searchObj.params[key].push(value);
+                }
+              } else {
+                $scope.searchObj.params[key] = value;
+              }
+            });
+      }
+
       // Set default pagination if not set
       if ((!keepPagination &&
           !$scope.searchObj.permalink) ||
@@ -146,6 +168,8 @@
             gnFacetService.getParamsFromFacets($scope.currentFacets));
       }
 
+      params.bucket = $scope.searchResults.selectionBucket || 'metadata';
+
       var finalParams = angular.extend(params, hiddenParams);
       gnSearchManagerService.gnSearch(finalParams).then(
           function(data) {
@@ -159,8 +183,7 @@
             $scope.searchResults.dimension = data.dimension;
 
             // compute page number for pagination
-            if ($scope.searchResults.records.length > 0 &&
-                $scope.hasPagination) {
+            if ($scope.hasPagination) {
 
               var paging = $scope.paginationInfo;
 
@@ -321,7 +344,8 @@
     $scope.$on('clearResults', function() {
       $scope.searchResults = {
         records: [],
-        count: 0
+        count: 0,
+        selectionBucket: $scope.searchObj.selectionBucket
       };
     });
 
@@ -349,8 +373,6 @@
         link: function(scope, element, attrs) {
 
           scope.resetSearch = function(htmlElementOrDefaultSearch) {
-            //TODO: remove geocat ref
-            $('.geocat-search').find('.bootstrap-tagsinput .tag').remove();
             if (angular.isObject(htmlElementOrDefaultSearch)) {
               scope.controller.resetSearch(htmlElementOrDefaultSearch);
             } else {

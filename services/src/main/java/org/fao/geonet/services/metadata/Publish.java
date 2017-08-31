@@ -80,6 +80,7 @@ import static org.fao.geonet.repository.specification.OperationAllowedSpecs.hasM
  *
  * @author Jesse on 1/16/2015.
  */
+@Deprecated
 @Controller("md.publish")
 public class Publish {
 
@@ -174,7 +175,7 @@ public class Publish {
 
                         dataManager.doValidate(metadata.getDataInfo().getSchemaId(), metadata.getId() + "",
                                 new Document(metadata.getXmlData(false)), serviceContext.getLanguage());
-                        dataManager.indexMetadata(nextId, true);
+                        dataManager.indexMetadata(nextId, true, null);
                     }
 
                     boolean isInvalid =

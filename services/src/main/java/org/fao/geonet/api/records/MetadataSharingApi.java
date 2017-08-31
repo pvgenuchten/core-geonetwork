@@ -159,7 +159,7 @@ public class MetadataSharingApi {
 
         List<GroupOperations> privileges = sharing.getPrivileges();
         setOperations(sharing, dataManager, context, metadata, operationMap, privileges);
-        dataManager.indexMetadata(String.valueOf(metadata.getId()), true);
+        dataManager.indexMetadata(String.valueOf(metadata.getId()), true, null);
     }
 
 
@@ -182,6 +182,9 @@ public class MetadataSharingApi {
         @ApiParam(value = ApiParams.API_PARAM_RECORD_UUIDS_OR_SELECTION,
             required = false)
         @RequestParam(required = false) String[] uuids,
+        @ApiParam(value = ApiParams.API_PARAM_BUCKET_NAME,
+            required = false)
+        @RequestParam(required = false) String bucket,
         @ApiParam(
             value = "Privileges",
             required = true
@@ -199,7 +202,7 @@ public class MetadataSharingApi {
         MetadataProcessingReport report = new SimpleMetadataProcessingReport();
 
         try {
-            Set<String> records = ApiUtils.getUuidsParameterOrSelection(uuids, ApiUtils.getUserSession(session));
+            Set<String> records = ApiUtils.getUuidsParameterOrSelection(uuids, bucket, ApiUtils.getUserSession(session));
             report.setTotalRecords(records.size());
 
             final ApplicationContext appContext = ApplicationContextHolder.get();
@@ -318,7 +321,7 @@ public class MetadataSharingApi {
         if (!hasValidation) {
             dm.doValidate(metadata.getDataInfo().getSchemaId(), metadata.getId() + "",
                 new Document(metadata.getXmlData(false)), context.getLanguage());
-            dm.indexMetadata(metadata.getId() + "", true);
+            dm.indexMetadata(metadata.getId() + "", true, null);
         }
 
         boolean isInvalid =
@@ -329,7 +332,7 @@ public class MetadataSharingApi {
 
     @ApiOperation(
         value = "Get record sharing settings",
-        notes = "Return currnt sharing options for a record.",
+        notes = "Return current sharing options for a record.",
         nickname = "getRecordSharingSettings")
     @RequestMapping(
         value = "/{metadataUuid}/sharing",
@@ -478,7 +481,7 @@ public class MetadataSharingApi {
 
         metadata.getSourceInfo().setGroupOwner(groupIdentifier);
         metadataRepository.save(metadata);
-        dataManager.indexMetadata(String.valueOf(metadata.getId()), true);
+        dataManager.indexMetadata(String.valueOf(metadata.getId()), true, null);
     }
 
 
@@ -573,6 +576,13 @@ public class MetadataSharingApi {
         )
             Integer groupIdentifier,
         @ApiParam(
+            value = ApiParams.API_PARAM_BUCKET_NAME,
+            required = false)
+        @RequestParam(
+            required = false
+        )
+        String bucket,
+        @ApiParam(
             value = "User identifier",
             required = true
         )
@@ -589,7 +599,7 @@ public class MetadataSharingApi {
         MetadataProcessingReport report = new SimpleMetadataProcessingReport();
 
         try {
-            Set<String> records = ApiUtils.getUuidsParameterOrSelection(uuids, ApiUtils.getUserSession(session));
+            Set<String> records = ApiUtils.getUuidsParameterOrSelection(uuids, bucket, ApiUtils.getUserSession(session));
             report.setTotalRecords(records.size());
 
             final ApplicationContext context = ApplicationContextHolder.get();
@@ -680,7 +690,7 @@ public class MetadataSharingApi {
                 report, dataManager, accessMan, metadataRepository,
                 serviceContext, listOfUpdatedRecords, metadataUuid);
             dataManager.flush();
-            dataManager.indexMetadata(String.valueOf(metadata.getId()), true);
+            dataManager.indexMetadata(String.valueOf(metadata.getId()), true, null);
 
         } catch (Exception exception) {
             report.addError(exception);

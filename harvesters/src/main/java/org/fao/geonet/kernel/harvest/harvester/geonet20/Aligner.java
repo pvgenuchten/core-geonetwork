@@ -195,7 +195,7 @@ public class Aligner {
                 //--- maybe the metadata was unretrievable
 
                 if (id != null) {
-                    dataMan.indexMetadata(id, true);
+                    dataMan.indexMetadata(id, true, null);
                 }
             }
         }
@@ -283,7 +283,7 @@ public class Aligner {
             log.debug("    - Setting categories : " + categories);
         }
 
-        metadata.getCategories().addAll(categories);
+        metadata.getMetadataCategories().addAll(categories);
     }
 
     private void addPrivileges(String id) throws Exception {

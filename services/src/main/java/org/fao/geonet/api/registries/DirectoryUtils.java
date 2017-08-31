@@ -16,6 +16,7 @@ import org.fao.geonet.kernel.search.SearcherType;
 import org.fao.geonet.repository.MetadataRepository;
 import org.fao.geonet.services.subtemplate.Get;
 import org.fao.geonet.util.Sha1Encoder;
+import org.fao.geonet.util.XslUtil;
 import org.fao.geonet.utils.Log;
 import org.fao.geonet.utils.Xml;
 import org.jdom.Attribute;
@@ -24,16 +25,16 @@ import org.jdom.JDOMException;
 import org.jdom.Namespace;
 import org.jdom.Text;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import jeeves.constants.Jeeves;
 import jeeves.server.ServiceConfig;
 import jeeves.server.context.ServiceContext;
 import jeeves.xlink.XLink;
+
+import static org.fao.geonet.schema.iso19139.ISO19139Namespaces.GCO;
+import static org.fao.geonet.schema.iso19139.ISO19139Namespaces.GMD;
+import static org.fao.geonet.schema.iso19139.ISO19139Namespaces.SRV;
 
 /**
  * Created by francois on 11/03/16.
@@ -44,12 +45,12 @@ public class DirectoryUtils {
     /**
      * Save entries and metadata
      */
-    public static void saveEntries(CollectResults collectResults,
+    public static void saveEntries(ServiceContext context,
+                                   CollectResults collectResults,
                                    String sourceIdentifier,
                                    Integer owner,
                                    Integer groupOwner,
                                    boolean saveRecord) {
-        ServiceContext context = ServiceContext.get();
         DataManager dataManager = context.getBean(DataManager.class);
         MetadataRepository metadataRepository = context.getBean(MetadataRepository.class);
         Table<String, String, Element> entries = collectResults.getEntries();
@@ -122,10 +123,11 @@ public class DirectoryUtils {
      * Extract all entries matching a specific XPath. If an entry is found multiple times in the
      * record, and the identifier match, only one is reported (the last one).
      */
-    public static CollectResults collectEntries(Metadata record,
+    public static CollectResults collectEntries(ServiceContext context,
+                                                Metadata record,
                                                 String xpath,
                                                 String identifierXpath) throws Exception {
-        return collectEntries(record, xpath, identifierXpath, null, false, false, null);
+        return collectEntries(context, record, xpath, identifierXpath, null, false, false, null);
     }
 
     /**
@@ -133,18 +135,20 @@ public class DirectoryUtils {
      * subtemplate list, the record one is updated. To preserve properties from the record, use the
      * propertiesToCopy
      */
-    public static CollectResults synchronizeEntries(Metadata record,
+    public static CollectResults synchronizeEntries(ServiceContext context,
+                                                    Metadata record,
                                                     String xpath,
                                                     String identifierXpath,
                                                     List<String> propertiesToCopy,
                                                     boolean substituteAsXLink,
                                                     String directoryFilterQuery) throws Exception {
-        return collectEntries(record, xpath, identifierXpath,
+        return collectEntries(context, record, xpath, identifierXpath,
             propertiesToCopy, substituteAsXLink, true, directoryFilterQuery);
     }
 
 
-    private static CollectResults collectEntries(Metadata record,
+    private static CollectResults collectEntries(ServiceContext context,
+                                                 Metadata record,
                                                  String xpath,
                                                  String identifierXpath,
                                                  List<String> propertiesToCopy,
@@ -153,7 +157,7 @@ public class DirectoryUtils {
                                                  String directoryFilterQuery) throws Exception {
         CollectResults collectResults = new CollectResults(record);
         Map<String, List<Namespace>> namespaceList = new HashMap<String, List<Namespace>>();
-        ServiceContext context = ServiceContext.get();
+
         MetadataRepository metadataRepository = context.getBean(MetadataRepository.class);
 
         if (Log.isDebugEnabled(LOGGER)) {
@@ -280,7 +284,7 @@ public class DirectoryUtils {
                             }
                         }
                         parameters.put(searchIndexField, identifier);
-                        String id = search(parameters);
+                        String id = search(context, parameters);
                         if (id != null) {
                             Metadata subTemplate = metadataRepository.findOne(id);
                             if (subTemplate != null) {
@@ -398,9 +402,9 @@ public class DirectoryUtils {
      *
      * @return The record identifier
      */
-    private static String search(Map<String, String> searchParameters) {
+    private static String search(ServiceContext context, Map<String, String> searchParameters) {
         ServiceConfig _config = new ServiceConfig();
-        ServiceContext context = ServiceContext.get();
+
         SearchManager searchMan = context.getBean(SearchManager.class);
 
         try (MetaSearcher searcher = searchMan.newSearcher(SearcherType.LUCENE, Geonet.File.SEARCH_LUCENE)) {
@@ -427,4 +431,22 @@ public class DirectoryUtils {
         }
         return null;
     }
+
+    public static Element removeUnsedLangsEntry(Element entry, final String[] langs) throws JDOMException {
+        List<Element> multilangElement = (List<Element>)Xml.selectNodes(entry, "*//node()[@locale]");
+
+        List<String> twoCharLangs = new ArrayList<String>();
+        for(String l : langs) {
+            twoCharLangs.add("#" + XslUtil.twoCharLangCode(l).toUpperCase());
+        }
+
+        for(Element el : multilangElement) {
+            if(!twoCharLangs.contains(el.getAttribute("locale").getValue())) {
+                Element parent = (Element)el.getParent();
+                parent.detach();
+            }
+        }
+        return entry;
+    }
+
 }

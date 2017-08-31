@@ -38,14 +38,12 @@ import org.fao.geonet.kernel.metadata.StatusActionsFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -55,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import jeeves.server.context.ServiceContext;
 import jeeves.services.ReadWriteController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_OPS;
 import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_TAG;
@@ -85,9 +84,10 @@ public class MetadataWorkflowApi {
     )
     @PreAuthorize("hasRole('Editor')")
     @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Status updated."),
+        @ApiResponse(code = 204, message = "Status updated."),
         @ApiResponse(code = 403, message = ApiParams.API_RESPONSE_NOT_ALLOWED_CAN_EDIT)
     })
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void status(
         @ApiParam(
             value = API_PARAM_RECORD_UUID,
@@ -143,6 +143,6 @@ public class MetadataWorkflowApi {
 
         //--- reindex metadata
         DataManager dataManager = appContext.getBean(DataManager.class);
-        dataManager.indexMetadata(String.valueOf(metadata.getId()), true);
+        dataManager.indexMetadata(String.valueOf(metadata.getId()), true, null);
     }
 }

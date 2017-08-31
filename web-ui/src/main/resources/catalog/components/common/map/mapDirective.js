@@ -25,6 +25,13 @@
   goog.provide('gn_map_directive');
   goog.require('gn_owscontext_service');
 
+  var METRIC_DECIMALS = 4;
+  var DEGREE_DECIMALS = 8;
+
+  var getDigitNumber = function(proj) {
+    return proj == 'EPSG:4326' ? DEGREE_DECIMALS : METRIC_DECIMALS;
+  };
+
   angular.module('gn_map_directive',
       ['gn_owscontext_service'])
 
@@ -44,6 +51,10 @@
              hbottomRef: '@',
              hleftRef: '@',
              hrightRef: '@',
+             identifierRef: '@',
+             identifier: '@',
+             descriptionRef: '@',
+             description: '@',
              dcRef: '@',
              extentXml: '=?',
              lang: '=',
@@ -155,9 +166,12 @@
                    scope.extent[from],
                    scope.projs[from], scope.projs[to]
                );
-               scope.extent[to] = extent.map(function(coord) {
-                 return Math.round(coord * 10000) / 10000;
-               });
+               if (extent && extent.map) {
+                 var decimals = getDigitNumber(scope.projs.form);
+                 scope.extent[to] = extent.map(function(coord) {
+                   return coord.toFixed(decimals) / 1;
+                 });
+               }
              };
 
              // Init extent from md for map and form
@@ -169,9 +183,13 @@
                var extent = gnMap.reprojExtent(
                    scope.extent.form, oldValue, newValue
                );
-               scope.extent.form = extent.map(function(coord) {
-                 return Math.round(coord * 10000) / 10000;
-               });
+               if (extent && extent.map) {
+                 var decimals = getDigitNumber(scope.projs.form);
+
+                 scope.extent.form = extent.map(function(coord) {
+                   return coord.toFixed(decimals) / 1;
+                 });
+               }
              });
 
              // TODO: move style in db config
@@ -319,6 +337,14 @@
                    parseFloat(bbox.east),
                    parseFloat(bbox.north)];
                  scope.location = region.name;
+
+                 if (attrs.identifierRef !== undefined) {
+                   scope.identifier = region.id;
+                 }
+                 if (attrs.descriptionRef !== undefined) {
+                   scope.description = region.name;
+                 }
+
                  reprojExtent('md', 'map');
                  reprojExtent('md', 'form');
                  setDcOutput();
