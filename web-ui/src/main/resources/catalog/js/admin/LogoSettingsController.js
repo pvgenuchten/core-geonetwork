@@ -41,7 +41,8 @@
          * The list of catalog logos
          */
       $scope.logos = [];
-
+      $scope.groups =[];
+      $scope.grouplogos=[];
       /**
        * Load list of logos
        */
@@ -52,6 +53,36 @@
               $scope.logos = data;
             });
       };
+
+      function loadGroups() {
+        $scope.isLoadingGroups = true;
+        // If not send profile, all groups are returned
+        var profile = ($scope.user.profile) ?
+            '?profile=' + $scope.user.profile : '';
+
+        $http.get('../api/groups').
+            success(function(data) {
+              $scope.groups = data;
+              $($scope.logos).each(function(){ $scope.grouplogos[this]=""; });
+              $($scope.groups).each(function() { $scope.grouplogos[this.logo]=this.id });
+              $scope.isLoadingGroups = false;
+            }).error(function(data) {
+              // TODO
+              $scope.isLoadingGroups = false;
+            });
+      }
+
+      $scope.assignToGroup = function(group,logo){
+        if (group && logo){
+          $http.post('../api/groups/'+group+'/logo/'+logo).
+            success(function(data) {
+              // TODO
+            }).error(function(data) {
+              // TODO
+              $scope.isLoadingGroups = false;
+            });
+        }
+      }
 
       /**
        * Callback when error uploading file.
@@ -125,6 +156,7 @@
       };
 
       loadLogo();
+      loadGroups();
     }]);
 
 })();
