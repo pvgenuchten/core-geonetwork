@@ -47,7 +47,8 @@
           'selected': '=gnMultiselect',
           'choices': '=',
           'sortFn': '&',
-          'labelProp': '@'  // Function or property
+          'labelProp': '@',
+          'idProp': '@' 
         },
         templateUrl: '../../catalog/components/common/multiselect/partials/' +
             'multiselect.html',
@@ -56,7 +57,8 @@
           var sortOnSelection = true;
           scope.currentSelectionLeft = [];
           scope.currentSelectionRight = [];
-          scope.selected = [];
+          console.log(scope.selected);
+          //scope.selected = [];
 
           /**
            * Return the label of the element
@@ -70,16 +72,24 @@
               return e[scope.labelProp]();
             }
           };
+          scope.getId = function(e) {
+            if (angular.isString(e[scope.idProp])) {
+              return e[scope.idProp];
+            } else if (angular.isFunction(e[scope.idProp])) {
+              return e[scope.idProp]();
+            }
+          };
           /**
           * Select a single element or the list of currently
           * selected element.
           */
           scope.select = function(k) {
             var elementsToAdd = [];
+
             if (!k) {
               angular.forEach(scope.currentSelectionLeft, function(value) {
                 elementsToAdd.push($.grep(scope.choices, function(n) {
-                  return scope.getLabel(n) === value;
+                  return scope.getId(n) === value;
                 })[0]);
               });
             } else {
@@ -89,7 +99,7 @@
             angular.forEach(elementsToAdd, function(e) {
               scope.selected.push(e);
               scope.choices = $.grep(scope.choices, function(n) {
-                return scope.getLabel(n) !== scope.getLabel(e);
+                return scope.getId(n) !== scope.getId(e);
               });
             });
 
@@ -98,13 +108,12 @@
             }
           };
 
-
           scope.unselect = function(k) {
             var elementsToRemove = k ?
-                [scope.getLabel(k)] : scope.currentSelectionRight;
+                [scope.getId(k)] : scope.currentSelectionRight;
             scope.selected = $.grep(scope.selected, function(n) {
               var toUnselect =
-                  $.inArray(scope.getLabel(n), elementsToRemove) !== -1;
+                  $.inArray(scope.getId(n), elementsToRemove) !== -1;
               if (toUnselect) {
                 scope.choices.push(n);
               }

@@ -25,9 +25,11 @@
   goog.provide('gn_usergroup_controller');
 
   goog.require('gn_dbtranslation');
-
+  goog.require('gn_multiselect');
+  
   var module = angular.module('gn_usergroup_controller', [
     'gn_dbtranslation',
+    'gn_multiselect',
     'blueimp.fileupload']);
 
 
@@ -97,6 +99,10 @@
       $scope.isLoadingUsers = false;
       $scope.isLoadingGroups = false;
 
+      $scope.registeredGroups=[];
+      $scope.editorGroups=[];
+      $scope.reviewerGroups=[];
+      $scope.userAdminGroups=[];
 
       // This is to force IE11 NOT to cache json requests
       if (!$http.defaults.headers.get) {
@@ -112,6 +118,24 @@
             $scope.categories = [nullTag].concat(data);
           });
 
+      // Check initial keywords are available in the thesaurus
+             $scope.sortKeyword = function(a, b) {
+               if (a.getLabel().toLowerCase() <
+               b.getLabel().toLowerCase()) {
+                 return -1;
+               }
+               if (a.getLabel().toLowerCase() >
+               b.getLabel().toLowerCase()) {
+                 return 1;
+               }
+               return 0;
+             };
+
+      function grp(g){
+          g.getLabel = function(){return this.name};
+          g.getId = function(){return this.id};
+        }
+
       function loadGroups() {
         $scope.isLoadingGroups = true;
         // If not send profile, all groups are returned
@@ -121,6 +145,9 @@
         $http.get('../api/groups' + profile).
             success(function(data) {
               $scope.groups = data;
+              angular.forEach($scope.groups,function(g){grp(g)});
+
+console.log($scope.groups);
               $scope.isLoadingGroups = false;
             }).error(function(data) {
               // TODO
@@ -226,6 +253,10 @@
         $scope.userIsEnabled = true;
         $scope.userSelected = null;
         $scope.userGroups = null;
+        $scope.registeredGroups=[];
+        $scope.editorGroups=[];
+        $scope.reviewerGroups=[];
+        $scope.userAdminGroups=[];
 
         $http.get('../api/users/' + u.id)
             .success(function(data) {
@@ -239,6 +270,26 @@
               $http.get('../api/users/' + u.id + '/groups')
               .success(function(groups) {
                     $scope.userGroups = groups;
+                    angular.forEach($scope.userGroups, function(g){
+
+ 
+                        if (g.id.profile=="RegisteredUser" 
+                          && $scope.registeredGroups.indexOf(g.id.groupId)==-1) {
+                            $scope.registeredGroups.push(grp(g.group));
+                          }
+                        else if (g.id.profile=="Editor" 
+                          && $scope.editorGroups.indexOf(g.id.groupId)==-1) {
+                            $scope.editorGroups.push(grp(g.group));
+                          }
+                        else if (g.id.profile=="Reviewer" 
+                          && $scope.reviewerGroups.indexOf(g.id.groupId)==-1) {
+                            $scope.reviewerGroups.push(grp(g.group));
+                        }
+                        else if (g.id.profile=="UserAdmin" 
+                          && $scope.userAdminGroups.indexOf(g.id.groupId)==-1) {
+                            $scope.userAdminGroups.push(grp(g.group));     
+                          }
+                    });
                   }).error(function(data) {
                     // TODO
                   });
@@ -246,7 +297,7 @@
               // TODO
             });
 
-
+        
 
         // Retrieve records in that group
         $scope.$broadcast('resetSearch', {
