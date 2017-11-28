@@ -72,9 +72,9 @@
             });
       }
 
-      $scope.assignToGroup = function(group,logo){
+      $scope.assignToGroup = function(group, logo){
         if (group && logo){
-          $http.post('../api/groups/'+group+'/logo/'+logo).
+          $http.put('../api/groups/'+group+'/logo', logo).
             success(function(data) {
               // TODO
             }).error(function(data) {
