@@ -34,17 +34,21 @@ import org.fao.geonet.ApplicationContextHolder;
 import org.fao.geonet.api.API;
 import org.fao.geonet.api.ApiParams;
 import org.fao.geonet.api.ApiUtils;
+import org.fao.geonet.api.exception.NotAllowedException;
 import org.fao.geonet.api.exception.ResourceNotFoundException;
 import org.fao.geonet.api.records.attachments.AttachmentsApi;
 import org.fao.geonet.api.tools.i18n.LanguageUtils;
 import org.fao.geonet.constants.Geonet;
 import org.fao.geonet.domain.*;
+import org.fao.geonet.exceptions.BadParameterEx;
+import org.fao.geonet.exceptions.OperationNotAllowedEx;
 import org.fao.geonet.kernel.DataManager;
 import org.fao.geonet.repository.*;
 import org.fao.geonet.repository.specification.GroupSpecs;
 import org.fao.geonet.repository.specification.OperationAllowedSpecs;
 import org.fao.geonet.repository.specification.UserGroupSpecs;
 import org.fao.geonet.resources.Resources;
+import org.fao.geonet.utils.FilePathChecker;
 import org.fao.geonet.utils.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,11 +59,13 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import springfox.documentation.annotations.ApiIgnore;
+import sun.awt.AppContext;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
@@ -212,6 +218,59 @@ public class GroupsApi {
                 groupId));
             throw new RuntimeException(e);
         }
+    }
+
+    @ApiOperation(
+        value = "Update the group logo",
+        notes = "Set the group logo to the one with the named passed. If no logo with that name exists in the logos "
+            + "folder it returns a 404.",
+        nickname = "updateLogo")
+    @RequestMapping(value = "/{groupId}/logo", method = RequestMethod.PUT)
+    @PreAuthorize("hasRole('UserAdmin')")
+    @ApiResponses(value = {
+        @ApiResponse(code = 204, message = "Logo updated"),
+        @ApiResponse(code = 400, message = "Logo does not exist"),
+        @ApiResponse(code = 403, message = ApiParams.API_RESPONSE_NOT_ALLOWED_ONLY_USER_ADMIN),
+        @ApiResponse(code = 404, message = "Group does not exist")
+    })
+    public ResponseEntity<Void> updateLogo(@ApiParam(value = "Group identifier", required = true)
+                                                 @PathVariable(value = "groupId") final Integer groupId,
+                                             @ApiParam(value = "The logo name", required = true)
+                                             @RequestBody String logoName,
+                                             HttpSession session
+                                             ) throws ResourceNotFoundException, IOException {
+        ApplicationContext appContext = ApplicationContextHolder.get();
+        GroupRepository groupRepository = appContext.getBean(GroupRepository.class);
+        UserSession userSession = ApiUtils.getUserSession(session);
+        Integer userId = userSession.getUserIdAsInt();
+
+        Group group = groupRepository
+            .findOne(groupId);
+        if (group == null) {
+            throw new ResourceNotFoundException(String.format(
+                MSG_GROUP_WITH_IDENTIFIER_NOT_FOUND, groupId
+            ));
+        }
+
+        // Check if the user has permissions to admin the group
+        List<UserGroup> usergroups = appContext.getBean(UserGroupRepository.class).findAll(
+            GroupSpecs.isUserAdminOrMore(userId));
+        if (!usergroups.stream().filter(ug -> groupId.equals(ug.getId().getGroupId())).findAny().isPresent()) {
+            throw new NotAllowedException(ApiParams.API_RESPONSE_NOT_ALLOWED_ONLY_USER_ADMIN);
+        }
+
+
+        // Check if the file name is valid and it exists in the logos folder
+        FilePathChecker.verify(logoName);
+        Path logosFolder = Resources.locateHarvesterLogosDirSMVC(appContext);
+        Path logoPath = logosFolder.resolve(logoName);
+        if (!Files.exists(logoPath)) {
+            throw new BadParameterEx( "The logo file does not exist in the logos folder");
+        }
+        group.setLogo(logoName);
+        group = groupRepository.save(group);
+        return ResponseEntity.noContent().build();
+
     }
 
     @ApiOperation(

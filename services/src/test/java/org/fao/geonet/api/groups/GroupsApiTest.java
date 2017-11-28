@@ -24,6 +24,7 @@ package org.fao.geonet.api.groups;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jeeves.server.context.ServiceContext;
 import junit.framework.Assert;
 import org.fao.geonet.api.FieldNameExclusionStrategy;
 import org.fao.geonet.api.JsonFieldNamingStrategy;
@@ -31,6 +32,7 @@ import org.fao.geonet.domain.Group;
 import org.fao.geonet.domain.Profile;
 import org.fao.geonet.domain.User;
 import org.fao.geonet.domain.UserGroup;
+import org.fao.geonet.kernel.GeonetworkDataDirectory;
 import org.fao.geonet.services.AbstractServiceIntegrationTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,9 +44,18 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Test class for GroupsApi.
@@ -62,6 +73,60 @@ public class GroupsApiTest extends AbstractServiceIntegrationTest {
     @Before
     public void setUp() {
         createTestData();
+    }
+
+    @Test
+    public void getGroupLogo() throws Exception {
+        ServiceContext context = createServiceContext();
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
+        this.mockHttpSession = loginAsAdmin();
+        Group sampleLogoGroup = _groupRepo.findByName("sampleLogo");
+        Assert.assertNotNull(sampleLogoGroup);
+
+        Path gn3Path = context.getBean(GeonetworkDataDirectory.class).getResourcesDir().resolve("images")
+            .resolve("harvesting").resolve("GN3.png");
+        byte[] gn3Bytes = Files.readAllBytes(gn3Path);
+
+        this.mockMvc.perform(get("/api/groups/" + sampleLogoGroup.getId() + "/logo")
+            .session(this.mockHttpSession))
+            .andExpect(status().isOk())
+            .andExpect(content().bytes(gn3Bytes));
+    }
+
+    @Test
+    public void setGroupLogo() throws Exception {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
+        this.mockHttpSession = loginAsAdmin();
+        Integer nonExistingGroupId = 10000;
+        Group sampleGroup = _groupRepo.findByName("sample");
+        Group sampleLogoGroup = _groupRepo.findByName("sampleLogo");
+        this.mockMvc.perform(put("/api/groups/" + nonExistingGroupId + "/logo")
+            .session(this.mockHttpSession).content("GN3.png"))
+            .andExpect(status().isNotFound());
+
+        // User is not userAdmin of the group
+        User sampleUserAdmin = _userRepo.findOneByUsername("testuser-useradmin");
+        this.mockHttpSession = loginAs(sampleUserAdmin);
+        this.mockMvc.perform(put("/api/groups/" + sampleLogoGroup.getId() + "/logo")
+            .session(this.mockHttpSession).content("GN3.png"))
+            .andExpect(status().isForbidden());
+
+        // Bad logo name
+        User sample2UserAdmin = _userRepo.findOneByUsername("sample2-useradmin");
+        this.mockHttpSession = loginAs(sample2UserAdmin);
+        this.mockMvc.perform(put("/api/groups/" + sampleLogoGroup.getId() + "/logo")
+            .session(this.mockHttpSession).content("../GN3.png"))
+            .andExpect(status().isBadRequest());
+        this.mockMvc.perform(put("/api/groups/" + sampleLogoGroup.getId() + "/logo")
+            .session(this.mockHttpSession).content("nonExistentLogo.png"))
+            .andExpect(status().isBadRequest());
+
+        // All parameters OK
+        this.mockMvc.perform(put("/api/groups/" + sampleLogoGroup.getId() + "/logo")
+            .session(this.mockHttpSession).content("blank.png"))
+            .andExpect(status().isNoContent());
+        Group groupAfterUpdate = _groupRepo.findByName("sampleLogo");
+        Assert.assertEquals("Logo was not updated as expected", "blank.png", groupAfterUpdate.getLogo());
     }
 
     @Test
@@ -331,5 +396,27 @@ public class GroupsApiTest extends AbstractServiceIntegrationTest {
         UserGroup userGroupUserAdmin = new UserGroup().setGroup(sampleGroup)
             .setProfile(Profile.Editor).setUser(testUserUserAdmin);
         _userGroupRepo.save(userGroupUserAdmin);
+
+        // UserAdmin - Group sample2
+        User sample2UserAdmin = new User();
+        sample2UserAdmin.setUsername("sample2-useradmin");
+        sample2UserAdmin.setProfile(Profile.UserAdmin);
+        sample2UserAdmin.setEnabled(true);
+        sample2UserAdmin.getEmailAddresses().add("sample2@example.com");
+        sample2UserAdmin = _userRepo.save(sample2UserAdmin);
+
+        // Group sample2
+        Group sampleGroup2 = new Group();
+        sampleGroup2.setName("sampleLogo");
+        sampleGroup2.setLogo("GN3.png");
+        sampleGroup2.setEmail("samplegroup@example.com");
+        sampleGroup2.setWebsite("http://samplelogo.example.com");
+        sampleGroup2.setDescription("Group with logo");
+        sampleGroup2 = _groupRepo.save(sampleGroup2);
+
+        UserGroup userGroupSample2UserAdmin = new UserGroup().setGroup(sampleGroup2)
+            .setProfile(Profile.UserAdmin).setUser(sample2UserAdmin);
+        _userGroupRepo.save(userGroupSample2UserAdmin);
+
     }
 }

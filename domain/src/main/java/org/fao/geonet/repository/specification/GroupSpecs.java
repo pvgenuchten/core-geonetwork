@@ -103,4 +103,27 @@ public final class GroupSpecs {
             }
         };
     }
+
+    public static Specification<UserGroup> isUserAdminOrMore(
+        final Integer userId) {
+        return new Specification<UserGroup>() {
+            @Override
+            public Predicate toPredicate(Root<UserGroup> root,
+                                         CriteriaQuery<?> query, CriteriaBuilder cb) {
+                root.join(UserGroup_.group);
+
+                Predicate pred = cb
+                    .equal(root.get(UserGroup_.user).get(User_.id), userId);
+
+                pred = cb
+                    .and(pred,
+                        cb.lessThanOrEqualTo(
+                            root.get(UserGroup_.id)
+                                .get(UserGroupId_.profile),
+                            Profile.UserAdmin));
+
+                return pred;
+            }
+        };
+    }
 }
