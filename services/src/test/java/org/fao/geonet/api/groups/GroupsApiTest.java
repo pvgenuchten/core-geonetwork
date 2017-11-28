@@ -139,7 +139,7 @@ public class GroupsApiTest extends AbstractServiceIntegrationTest {
             .session(this.mockHttpSession)
             .accept(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$", hasSize(2)))
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
     }
 
