@@ -213,9 +213,14 @@
               * '' for item selector,
               * 'tagsinput' for tags
               * 'tagsinput' and maxTags = 1 for only one tag
+              * 'checkboxes' to show a list of checkboxes
               * 'multiplelist' for multiple selection list
         -->
-        <xsl:variable name="widgetMode" select="'tagsinput'"/>
+        <xsl:variable name="widgetMode"
+                      as="xs:string"
+                      select="if ($thesaurusConfig/@widgetMode)
+                              then $thesaurusConfig/@widgetMode
+                              else 'tagsinput'"/>
         <xsl:variable name="maxTags"
                       as="xs:string"
                       select="if ($thesaurusConfig/@maxtags)
@@ -243,6 +248,7 @@
 
         <xsl:variable name="allLanguages"
                       select="concat($metadataLanguage, ',', $metadataOtherLanguages)"/>
+
         <div data-gn-keyword-selector="{$widgetMode}"
              data-metadata-id="{$metadataId}"
              data-element-ref="{concat('_X', ../gn:element/@ref, '_replace')}"

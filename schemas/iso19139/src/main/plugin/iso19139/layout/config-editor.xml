@@ -2080,9 +2080,30 @@
         <for name="srv:parameters"/>
       </flatModeExceptions>
 
+      <thesaurusList>
+        <thesaurus key="external.theme.data-security" title="Data beveiliging" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.data-transfer-outside-EU" widgetMode="checkboxes"/>
+        <thesaurus key="geonetwork.thesaurus.external.theme.rechtsgrond" maxtags="1" widgetMode="checkboxes"/>
+        <thesaurus key="geonetwork.thesaurus.external.theme.security-measures" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.specialcategoriesofpersonaldata" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.type_privacy_data" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.users-with-data-access" widgetMode="checkboxes"/>
+      </thesaurusList>
+
     </view>
 
     <view name="default">
+
+      <thesaurusList>
+        <thesaurus key="external.theme.data-security" title="Data beveiliging" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.data-transfer-outside-EU" widgetMode="checkboxes"/>
+        <thesaurus key="geonetwork.thesaurus.external.theme.rechtsgrond" maxtags="1" widgetMode="checkboxes"/>
+        <thesaurus key="geonetwork.thesaurus.external.theme.security-measures" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.specialcategoriesofpersonaldata" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.type_privacy_data" widgetMode="checkboxes"/>
+        <thesaurus key="external.theme.users-with-data-access" widgetMode="checkboxes"/>
+      </thesaurusList>
+      
       <sidePanel>
         <directive data-gn-onlinesrc-list=""/>
         <directive gn-geo-publisher=""
@@ -2151,12 +2172,12 @@
                    fieldset="false"
                    transformations="to-iso19139-keyword-with-anchor"/>
       </thesaurusList>
-      -->
+      
 
       <thesaurusList>
         <thesaurus key="external.none.allThesaurus"
                    fieldset="false"/>
-      </thesaurusList>
+      </thesaurusList>-->
 
     </view>
     <view name="advanced">

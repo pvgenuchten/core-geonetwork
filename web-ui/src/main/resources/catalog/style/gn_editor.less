@@ -821,6 +821,17 @@ gn-md-type-widget {
     }
   }
 }
+
+.columns-2 {
+ columns: 2;
+ column-gap: 2em;
+ .checkbox {
+   -webkit-column-break-inside: avoid;
+   page-break-inside: avoid;
+   break-inside: avoid;
+ }
+}
+
 .gn-editor-board {
   .table.gn-results-editor td {
     gn-md-type-widget {
