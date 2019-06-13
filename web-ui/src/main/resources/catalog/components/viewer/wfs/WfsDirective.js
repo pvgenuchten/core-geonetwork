@@ -106,6 +106,7 @@
               return gnWfsService.getCapabilities(gnGlobalSettings.getNonProxifiedUrl(scope.url))
                   .then(function(capabilities) {
                     scope.isWfsAvailable = true;
+                    if (capabilities.collections) capabilities.featureTypeList.featureType = capabilities.collections;
                     scope.capabilities = capabilities;
                     scope.featureType =
                       gnWfsService.getTypeName(capabilities, scope.typename);
@@ -189,6 +190,7 @@
             return gnWfsService.getCapabilities(scope.url)
                 .then(function(capabilities) {
                   scope.isWfsAvailable = true;
+                  if (capabilities.collections) capabilities.featureTypeList = {"featureType":capabilities.collections};
                   scope.capabilities = capabilities;
                   scope.featureType =
                       gnWfsService.getTypeName(capabilities, scope.typename);

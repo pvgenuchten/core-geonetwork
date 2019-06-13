@@ -319,8 +319,39 @@
           getWFSCapabilities: function(url, version) {
             var defer = $q.defer();
             if (url) {
+
+
               defaultVersion = '1.1.0';
               version = version || defaultVersion;
+
+              //detect if this is a v1/2 or v3 service, check if url contains request=getcapabilities
+              
+              if (url.toLowerCase().indexOf('version=3.0')>-1){
+                version='3.0';
+              }
+
+              if (version='3.0') {
+                
+                  $http.get(url.split('?')[0]+'/collections', {
+                    cache: true,
+                    timeout: 5000
+                  }).success(function(data, status, headers, config) {
+                    var xfsCap = data;
+                    console.log(data);
+                    if (!xfsCap || xfsCap.exception != undefined) {
+                      defer.reject({msg: $translate.instant('wfsGetCapabilitiesFailed'),
+                        owsExceptionReport: xfsCap});
+                    } else {
+                      defer.resolve(xfsCap);
+                    }
+
+                  })
+                  .error(function(data, status, headers, config) {
+                    defer.reject($translate.instant('wfsGetCapabilitiesFailed'));
+                  });
+                return defer.promise;
+              }
+
               url = mergeDefaultParams(url, {
                 request: 'GetCapabilities',
                 service: 'WFS',

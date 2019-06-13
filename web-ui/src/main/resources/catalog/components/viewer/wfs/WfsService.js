@@ -64,6 +64,12 @@
               return capabilities.featureTypeList.featureType[i];
             }
           }
+        } else if (capabilities.collections) {
+          for (var i = 0;i < capabilities.collections.length;i++) {
+            if (capabilities.collections[i].name==typename) {
+              return capabilities.collections[i];
+            }
+          }
         }
       };
 
@@ -94,9 +100,12 @@
               }
             }
           }
+        } else if (capabilities.collections) {
+          return ["text/html","application/json"];
         }
         return [];
       };
+
       this.getProjection = function(capabilities, layers) {
         if (capabilities.operationsMetadata) {
           for (var i = 0;
@@ -111,6 +120,8 @@
               }
             }
           }
+        } else if (capabilities.collections) {
+          return ["epsg:4326"];
         }
         return [];
       };
@@ -120,21 +131,7 @@
       this.download = function(url, version, typename,
                                format, extent, projection) {
         if (url) {
-          var defaultVersion = '1.1.0';
-          var params = {
-            request: 'GetFeature',
-            service: 'WFS',
-            version: version || defaultVersion,
-            typeName: typename,
-            outputFormat: format
-          };
-          if (extent) {
-            params.bbox = extent;
-          }
-          if (projection) {
-            params.srsName = projection;
-          }
-          url = gnOwsCapabilities.mergeParams(url, params);
+          url=url.split('?')[0]+"/collections/"+typename+"/items?f="+format.split('/')[1];
           window.open(url);
         } else {
           console.warn('no url');
