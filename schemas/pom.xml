@@ -51,6 +51,8 @@
     <module>dublin-core</module>
     <module>iso19110</module>
     <module>iso19139</module>
+<module>iso19139.nl.services.2.0.0</module>
+<module>iso19139.nl.geografie.2.0.0</module>
     <module>iso19115-3.2018</module>
   </modules>
   <properties>

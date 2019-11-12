@@ -13,3 +13,15 @@
 [submodule "schemas/iso19115-3.2018"]
 	path = schemas/iso19115-3.2018
 	url = https://github.com/metadata101/iso19115-3.2018
+[submodule "web-ui/src/main/resources/catalog/views/dutch"]
+	path = web-ui/src/main/resources/catalog/views/dutch
+	url = https://github.com/osgeonl/geonetwork-dutch-skin
+	branch = 3.8.x
+[submodule "schemas/iso19139.nl.geografie.2.0.0"]
+	path = schemas/iso19139.nl.geografie.2.0.0
+	url = https://github.com/metadata101/iso19139.nl.geografie.2.0.0
+	branch = 3.8.x
+[submodule "schemas/iso19139.nl.services.2.0.0"]
+	path = schemas/iso19139.nl.services.2.0.0
+	url = https://github.com/metadata101/iso19139.nl.services.2.0.0
+	branch = 3.8.x
