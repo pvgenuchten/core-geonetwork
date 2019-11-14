@@ -206,8 +206,8 @@
             },
             'WFS' : {
               iconClass: 'fa-globe',
-              label: 'addToMap',
-              action: addWFSToMap
+              label: 'fileLink',
+              action: null
             },
             'ATOM' : {
               iconClass: 'fa-globe',
