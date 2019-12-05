@@ -1,0 +1,125 @@
+<div class="row" data-ng-controller="GnPagesController">
+    <div class="col-lg-4">
+      <div class="panel panel-default">
+        <div class="panel-heading" data-translate="">pages</div>
+          <div class="panel-body">
+              <div class="form-group">
+                  <label class="control-label col-sm-3" data-translate="">Language</label>
+    
+                  <div class="col-sm-9">
+                    <select 
+                      data-ng-options="key as value for (key , value) in langLabels"
+                      data-ng-model="langSelected" data-ng-change="loadpages()">
+                      <option>{{'Select language'|translate}}</option>
+                    </select>
+                  </div>
+              </div>
+
+            <input class="form-control" data-ng-model="pagesearch.$" autofocus=""
+                  placeholder="{{'filter' | translate}}"/>
+            <input type="hidden" data-ng-model="pageSelected.linkText"/>
+    
+            <div class="list-group">
+              <a href="" class="list-group-item"
+                data-ng-repeat="v in pages"
+                data-ng-click="selectpage(v)" title="{{v.linkText}}"> {{v.linkText}} <span style="float:right">{{(v.sections|asArray)[0]}}</span></a>
+            </div>
+    
+            <button type="button" class="btn btn-primary btn-block"
+                    data-ng-click="addpage()">
+              <i class="fa fa-plus"/>
+              <span data-translate="">newpage</span>
+            </button>
+          </div>
+        </div>
+    
+        <div data-gn-need-help="administrator-guide/configuring-the-catalog/map-server-configuration.html"></div>
+    </div>
+  
+    <div class="col-lg-8" data-ng-hide="pageSelected == null">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <span data-ng-hide="pageSelected.linkText == ''"
+                data-translate="">updatepage</span>
+          <span data-ng-hide="pageSelected.linkText != ''"
+                data-translate="">newpage</span>
+          <strong>{{pageSelected.linkText}}</strong>
+          <div class="btn-toolbar pull-right">
+            <button type="button" class="btn btn-primary"
+                    data-ng-disabled="!pageUpdated"
+                    data-ng-click="savepage('#gn-page-edit')">
+              <i class="fa fa-save"></i>&nbsp;
+              <span data-translate="">save</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-danger"
+                    data-ng-hide="pageSelected.linkText == ''"
+                    data-ng-click="deletepage(pageSelected.linkText)">
+              <i class="fa fa-times"></i>&nbsp;
+              <span data-translate="">delete</span>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form id="gn-page-edit" name="gnpageEdit"
+                class="form-horizontal"
+                data-ng-keypress="updatingpage()">
+                <input type="hidden" name="_csrf" value="{{csrf}}"/>
+            <fieldset>
+              <legend data-translate="">pageDescription</legend>
+  
+              <div class="form-group">
+                <label class="control-label col-sm-3" data-translate="">Title</label>
+  
+                <div class="col-sm-9">
+                  <input type="text" name="linkText" class="form-control" 
+                         required="" 
+                         data-ng-model="pageSelected.linkText"/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="control-label col-sm-3" data-translate="">format</label>
+                <div class="col-sm-9">
+                  <input type="radio" value="LINK" name="format" data-ng-model="pageSelected.format"> Link
+                  <input type="radio" value="PAGE" name="format" data-ng-model="pageSelected.format"> Page
+                </div>
+              </div>
+
+              <div class="form-group" ng-show="pageSelected.type=='PAGE'">
+                  <label class="control-label col-sm-3" data-translate="">content</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="format" class="form-control" data-ng-model="pageSelected.content"/>
+                  </div>
+                </div>
+
+              <div class="form-group" ng-show="pageSelected.type=='LINK'">
+                <label class="control-label col-sm-3" data-translate="">link</label>
+                <div class="col-sm-9">
+                  <input type="text" name="link" class="form-control" data-ng-model="pageSelected.link"/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                  <label class="control-label col-sm-3" data-translate="">Menu</label>
+                  <div class="col-sm-9">
+                    <select data-ng-model="pageSelected.sections">
+                        <option value="">{{'Select menu'|translate}}</option>
+                        <option value="HOME">{{'Home page'|translate}}</option>
+                        <option value="TOP">{{'Top'|translate}}</option>
+                        <option value="FOOTER">{{'Footer'|translate}}</option>
+                        <option value="MENU">{{'Menu'|translate}}</option>
+                        <option value="SUBMENU">{{'Submenu'|translate}}</option>
+                    </select>
+                  </div>
+              </div>
+            </fieldset>
+           
+          </form>
+        </div>
+      </div>
+    </div>
+  
+  
+  
+  </div>
+  
