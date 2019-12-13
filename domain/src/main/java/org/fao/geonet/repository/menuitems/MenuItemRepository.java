@@ -20,16 +20,17 @@
  * Contact: Jeroen Ticheler - FAO - Viale delle Terme di Caracalla 2,
  * Rome - Italy. email: geonetwork@osgeo.org
  */
-package org.fao.geonet.repository.page;
+package org.fao.geonet.repository.menuitems;
 
 import java.util.List;
 
-import org.fao.geonet.domain.page.Page;
-import org.fao.geonet.domain.page.PageIdentity;
+import org.fao.geonet.domain.menuitems.MenuItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PageRepository extends JpaRepository<Page, PageIdentity> {
-    
-    List<Page> findByPageIdentityLanguage(String language);
+public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
+
+    List<MenuItem> findByLanguage(String language);
+
+    MenuItem findOneByLanguageAndName(String language, String name);
 
 }

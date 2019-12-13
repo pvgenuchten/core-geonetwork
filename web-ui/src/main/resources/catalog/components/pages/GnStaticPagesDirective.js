@@ -42,7 +42,7 @@
 
               $http({
                 method: 'GET',
-                url: '../api/pages/' + $scope.language + '/' + page + '/content'
+                url: '../api/menuitems/' + $scope.language + '/' + page + '/content'
               }).then(function mySuccess(response) {
                 $scope.content = response.data;
               }, function myError(response) {
@@ -81,7 +81,7 @@
             $scope.loadPages = function() {
               $http({
                 method: 'GET',
-                url: '../api/pages/list?language=' + $scope.language + '&section=' + $scope.section.toUpperCase()
+                url: '../api/menuitems/list?language=' + $scope.language + '&section=' + $scope.section.toUpperCase()
               }).then(function mySuccess(response) {
                   $scope.pagesList = response.data;
               }, function myError(response) {
