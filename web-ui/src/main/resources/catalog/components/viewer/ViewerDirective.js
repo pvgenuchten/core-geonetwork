@@ -111,8 +111,13 @@
                 gnMap.zoom(map, delta);
               };
               scope.zoomToMaxExtent = function(map) {
-                map.getView().fit(map.getView().
-                    getProjection().getExtent(), map.getSize());
+                // Extent of central Europe in EPSG:3857
+                var extent = [-2749287,3766816,4050551,8238077];
+                var projection = map.getView().getProjection().getCode();
+                if(projection!=='EPSG:3857') {
+                  extent = ol.proj.transformExtent(extent, 'EPSG:3857', projection);
+                }
+                map.getView().fit(extent, map.getSize());
               };
               scope.ol3d = null;
 
