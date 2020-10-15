@@ -51,7 +51,7 @@
   <!-- Starting point -->
   <xsl:template match="/">
 
-    <xsl:variable name="globalResourceUrl" select="replace(/root/resourceUrl, 'schema=iso19139.nl.geografie.2.0.0&amp;', '')" />
+    <xsl:variable name="globalResourceUrl" select="replace(/root/resourceUrl, 'schema=iso19139&amp;', '')" />
 
     <html>
       <head>
